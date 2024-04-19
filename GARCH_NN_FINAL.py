@@ -25,7 +25,7 @@ from ModuleFunctionGarch import *  #Fonction module
 
 Npara=40000
 alpha0=np.zeros(Npara,'f')
-a00 = 10**(-6)
+a00 = 10**(-3)
 a01  = 10**(-2)
 
 Disc=1000
@@ -65,7 +65,7 @@ Para[:,2]=torch.as_tensor(B1)
 
 
 T=1
-Dt=10**(-2)
+Dt=10**(-7)
 ScaledData=NNData(T, Dt, Para, Npara)
 
 '''Data Validation '''
