@@ -22,72 +22,66 @@ from ModuleFunctionGarch import *  #Fonction module
 
 '''*********************Data set*********************'''
 
-
-Npara=40000
+Npara=40000 #Training set size
 alpha0=np.zeros(Npara,'f')
-a00 = 10**(-3)
+a00 = 10**(-3) #range for alpha_0
 a01  = 10**(-2)
-
 Disc=1000
-alpha0=GenerateUnidParameter(a01, a00, Npara, Disc)
+alpha0=GenerateUnidParameter(a01, a00, Npara, Disc) #generation of alpha_0 sampling
 
 alpha1=np.zeros(Npara,'f')
-a10 = 0
+a10 = 0 #range for alpha_1
 a11  = 0.3
 Disc=1000
-alpha1=GenerateUnidParameter(a11, a10, Npara, Disc)
+alpha1=GenerateUnidParameter(a11, a10, Npara, Disc)#generation of alpha_1 sampling
 rng = np.random.default_rng(seed=None)
 rng.shuffle(alpha1)
 
-beta1=np.zeros(Npara,'f')
-b10 = 0
+beta1=np.zeros(Npara,'f') #generation of beta_1 sampling
+b10 = 0 #range for beta_1
 b11  = 0.99
 Disc=1000
 beta1=GenerateUnidParameter(b11, b10, Npara, Disc)
 
-
+#Remove parameters which don't insure  a positive Gamma6
 A=np.delete(alpha1, beta1**3+3*alpha1*beta1**2+9*alpha1**2*beta1+15*alpha1**3>0.97, 0)
 B=np.delete(beta1, beta1**3+3*alpha1*beta1**2+9*alpha1**2*beta1+15*alpha1**3>0.97, 0)
 A0=np.delete(alpha0, beta1**3+3*alpha1*beta1**2+9*alpha1**2*beta1+15*alpha1**3>0.97, 0)
 
 print(np.size(A))
+#Remove parameters which don't insure a positive Gamma4
 A1=np.delete(A, 0.97-3*A**2-2*A*B-B**2<0, 0)
 B1=np.delete(B, 0.97-3*A**2-2*A*B-B**2<0, 0)
 A10=np.delete(A0, 0.97-3*A**2-2*A*B-B**2<0, 0)
 print(np.size(A))
 
-Npara=np.size(A1)
+Npara=np.size(A1) #New training set size 
 Para=torch.zeros(Npara,3, device='cuda:0')
 Para[:,0]=torch.as_tensor(A10)
 Para[:,1]=torch.as_tensor(A1)
 Para[:,2]=torch.as_tensor(B1)
 
-
-
-T=1
-Dt=10**(-7)
-ScaledData=NNData(T, Dt, Para, Npara)
+T=1 #Maturity 
+Dt=10**(-7) #Time step
+ScaledData=NNData(T, Dt, Para, Npara) #Generation of final training data 
 
 '''Data Validation '''
 
-                        
-Na0=10
-Na1=20
-Nb1=20
-Nparatest=Nb1*Na1*Na0
 
-alpha0T=np.zeros(Na0,'f')
+Nparatest=5000 #Parameter test set size 
+
+alpha0T=np.zeros(Nparatest,'f')
 Disc=1000
 alpha0T=GenerateUnidParameter(a01, a00, Nparatest, Disc)
 
-alpha1T=np.zeros(Na1,'f')
+alpha1T=np.zeros(Nparatest,'f')
 Disc=1000
 alpha1T=GenerateUnidParameter(a11, a10, Nparatest, Disc)
 rng = np.random.default_rng(seed=None)
 rng.shuffle(alpha1T)
 
 
-beta1T=np.zeros(Nb1,'f')
+beta1T=np.zeros(Nparatest,'f')
 Disc=1000
 beta1T=GenerateUnidParameter(b11, b10, Nparatest, Disc)
 
@@ -109,7 +103,7 @@ ParaTest[:,1]=torch.as_tensor(A1T)
 ParaTest[:,2]=torch.as_tensor(B1T)
 
 
-ScaledDataTest=NNData(T, Dt, ParaTest, Nparatest)
+ScaledDataTest=NNData(T, Dt, ParaTest, Nparatest) #Generation of Final test data
 
 
 '''Networks'''
@@ -122,27 +116,26 @@ optimizerG = torch.optim.Adam(NetworkG.parameters(), lr=0.00001, betas=(0.5, 0.9
 
 
 Ntrain=Npara  #Size of the training set
-batche_size=500
+batche_size=500 #Batch size
 
 NetworkG.train()
 LossMSE=nn.MSELoss()
 
-Err_Validation=torch.zeros(0, device='cuda:0')   #Estimated Probability of having a fake sample 
-Err_Training=torch.zeros(0, device='cuda:0')  #Discrimnator array loss 
+Err_Training=torch.zeros(0, device='cuda:0')  #Generator array loss 
 
 
-'''Parttion'''
-r=0.01
+"""**************************************************Training Part**************************************************""""
+r=0.01 #Lagrange Multiplier 
 for epoch in range(20):
     for mini_batches in range(int(Ntrain/batche_size)):
             Xtrain=torch.as_tensor(ScaledData[mini_batches*batche_size:(mini_batches+1)*batche_size,:])
             Xpi=torch.empty(batche_size,3, device='cuda:0')
             Xpi[:,:]=Xtrain[:,3:]
             ParaG=NetworkG(Xpi)
-            #breakpoint()
-            #Generator_loss= LossMSE(Xtrain[:,0].view(batche_size,1), ParaG)
+            #Loss function
             Generator_loss= torch.mean((Xtrain[:,2].view(batche_size)-ParaG[:,2])**2)+torch.mean((Xtrain[:,0].view(batche_size)-ParaG[:,0])**2)+torch.mean((Xtrain[:,1].view(batche_size)-ParaG[:,1])**2)+r*(1/2)*(torch.mean(abs(torch.maximum( torch.tensor(0),ParaG[:,1]+ParaG[:,0]-1))**2))                                  
             optimizerG.zero_grad()
+            #Backward 
             Generator_loss.backward(retain_graph=True)
             #Genrator network parameters update
             optimizerG.step()
