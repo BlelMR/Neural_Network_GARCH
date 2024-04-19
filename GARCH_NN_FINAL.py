@@ -43,17 +43,7 @@ b11  = 0.99
 Disc=1000
 beta1=GenerateUnidParameter(b11, b10, Npara, Disc)
 
-#Remove parameters which don't insure  a positive Gamma6
-A=np.delete(alpha1, beta1**3+3*alpha1*beta1**2+9*alpha1**2*beta1+15*alpha1**3>0.97, 0)
-B=np.delete(beta1, beta1**3+3*alpha1*beta1**2+9*alpha1**2*beta1+15*alpha1**3>0.97, 0)
-A0=np.delete(alpha0, beta1**3+3*alpha1*beta1**2+9*alpha1**2*beta1+15*alpha1**3>0.97, 0)
-
-print(np.size(A))
-#Remove parameters which don't insure a positive Gamma4
-A1=np.delete(A, 0.97-3*A**2-2*A*B-B**2<0, 0)
-B1=np.delete(B, 0.97-3*A**2-2*A*B-B**2<0, 0)
-A10=np.delete(A0, 0.97-3*A**2-2*A*B-B**2<0, 0)
-print(np.size(A))
+A1, B1, A10=VerifConstrain(alpha1, beta1, alpha0) #Remove parameters which don't insure  a positive Gamma6 and positive Gamma4
 
 Npara=np.size(A1) #New training set size 
 Para=torch.zeros(Npara,3, device='cuda:0')
@@ -86,15 +76,7 @@ Disc=1000
 beta1T=GenerateUnidParameter(b11, b10, Nparatest, Disc)
 
 
-AT=np.delete(alpha1T, beta1T**3+3*alpha1T*beta1T**2+9*alpha1T**2*beta1T+15*alpha1T**3>0.97, 0)
-BT=np.delete(beta1T, beta1T**3+3*alpha1T*beta1T**2+9*alpha1T**2*beta1T+15*alpha1T**3>0.97, 0)
-A0T=np.delete(alpha0T, beta1T**3+3*alpha1T*beta1T**2+9*alpha1T**2*beta1T+15*alpha1T**3>0.97, 0)
-
-print(np.size(AT))
-A1T=np.delete(AT, 0.97-3*AT**2-2*AT*BT-BT**2<0, 0)
-B1T=np.delete(BT, 0.97-3*AT**2-2*AT*BT-BT**2<0, 0)
-A10T=np.delete(A0T, 0.97-3*AT**2-2*AT*BT-BT**2<0, 0)
-print(np.size(AT))
+A1T, B1T, A10T=VerifConstrain(alpha1T, beta1T, alpha0T)  #Remove parameters which don't insure  a positive Gamma6 and positive Gamma4
 
 Nparatest=np.size(A1T)
 ParaTest=torch.zeros(Nparatest,3, device='cuda:0')
@@ -124,7 +106,7 @@ LossMSE=nn.MSELoss()
 Err_Training=torch.zeros(0, device='cuda:0')  #Generator array loss 
 
 
-"""**************************************************Training Part**************************************************""""
+"""**************************************************Training Part**************************************************"""
 r=0.01 #Lagrange Multiplier 
 for epoch in range(20):
     for mini_batches in range(int(Ntrain/batche_size)):
