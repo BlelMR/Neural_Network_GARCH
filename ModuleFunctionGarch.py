@@ -172,3 +172,15 @@ def NNData(T, Dt, Para, Npara):
 
     ScaledData[:,3:]=data[:,3:]
     return ScaledData
+
+def VerifConstrain(alpha1T, beta1T, alpha0T):
+    AT=np.delete(alpha1T, beta1T**3+3*alpha1T*beta1T**2+9*alpha1T**2*beta1T+15*alpha1T**3>0.97, 0)
+    BT=np.delete(beta1T, beta1T**3+3*alpha1T*beta1T**2+9*alpha1T**2*beta1T+15*alpha1T**3>0.97, 0)
+    A0T=np.delete(alpha0T, beta1T**3+3*alpha1T*beta1T**2+9*alpha1T**2*beta1T+15*alpha1T**3>0.97, 0)
+
+    print(np.size(AT))
+    A1T=np.delete(AT, 0.97-3*AT**2-2*AT*BT-BT**2<0, 0)
+    B1T=np.delete(BT, 0.97-3*AT**2-2*AT*BT-BT**2<0, 0)
+    A10T=np.delete(A0T, 0.97-3*AT**2-2*AT*BT-BT**2<0, 0)
+    print(np.size(AT))
+    return A1T, B1T, A10T
