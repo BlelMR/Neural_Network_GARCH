@@ -143,11 +143,14 @@ plt.close()
 
 """""""""""""""""""""""""""""""""""""""""Validation Part"""""""""""""""""""""""""""""""""""""""""
 
-#PATH="./GARCH107/net_0.1_105106_3.pth"
-#checkpoint = torch.load(PATH)
-#NetworkG.load_state_dict(checkpoint)
-#NetworkG.eval()
 
+'''Uncomment this part if you want to use the pre trained Neural Network'''
+'''
+PATH="./GARCH107/net_0.1_105106_3.pth"
+checkpoint = torch.load(PATH)
+NetworkG.load_state_dict(checkpoint)
+NetworkG.eval()
+'''
 DataTorch=torch.as_tensor(ScaledDataTest[:,:])
 ParaPred=NetworkG(DataTorch[:,3:])
 AlphaPredTest=ParaPred[:,0]
